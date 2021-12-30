@@ -1,0 +1,6 @@
+**/__pycache__
+/resutls/*
+/test/build/*
+/seq/*
+/rosbag/*
+model/pointpillar.onnx.cache

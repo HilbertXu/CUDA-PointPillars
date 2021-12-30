@@ -23,6 +23,7 @@
 
 #include "./params.h"
 #include "./pointpillar.h"
+#include "./csvFile.h"
 
 #define checkCudaErrors(status)                                   \
 {                                                                 \
@@ -37,8 +38,9 @@
     }                                                             \
 }
 
-std::string Data_File = "../../data/";
+std::string Data_File = "../../seq/";
 std::string Model_File = "../../model/pointpillar.onnx";
+std::string Target_Dir = "/home/hilbertxu/puzek_ws/CUDA-PointPillars/resutls/";
 
 void Getinfo(void)
 {
@@ -115,7 +117,7 @@ int main(int argc, const char **argv)
 
   PointPillar pointpillar(Model_File, stream);
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 559; i++)
   {
     std::string dataFile = Data_File;
 
@@ -123,12 +125,35 @@ int main(int argc, const char **argv)
 
     ss<< i;
 
-    dataFile +="00000";
-    dataFile += ss.str();
-    dataFile +=".bin";
+    if (i<10) {
+      dataFile +="00000";
+      dataFile += ss.str();
+      dataFile +=".bin";
+    }
+    else if(i< 100) {
+      dataFile +="0000";
+      dataFile += ss.str();
+      dataFile +=".bin";
+    }
+    else {
+      dataFile +="000";
+      dataFile += ss.str();
+      dataFile +=".bin";
+    }
+    
+
+    std::string csvFileName = Target_Dir;
+    csvFileName += "00000";
+    csvFileName += ss.str();
+    csvFileName += ".csv";
+    std::string fileID = "00000" + ss.str();
 
     std::cout << "<<<<<<<<<<<" <<std::endl;
     std::cout << "load file: "<< dataFile <<std::endl;
+
+    csvfile csv(csvFileName);
+
+    csv << fileID << "x" << "y" << "z" << "w" << "l" << "h" << "rt" << "id" << "score" << endrow;
 
     //load points cloud
     unsigned int length = 0;
@@ -159,8 +184,17 @@ int main(int argc, const char **argv)
     checkCudaErrors(cudaFree(points_data));
 
     std::cout<<"Bndbox objs: "<< nms_pred.size()<<std::endl;
-    nms_pred.clear();
+    // nms_pred.clear();
     std::cout << ">>>>>>>>>>>" <<std::endl;
+    for (Bndbox box: nms_pred){
+      std::cout << "detected box: " << box.x << " " << box.y << " " << box.z << " "
+                << box.w << " " << box.l << " " << box.h << " "
+                << box.rt << " " << box.id << " " << box.score << " " << std::endl;
+      
+      csv << box.x << box.y << box.z << box.w << box.l << box.h << box.rt << box.id << box.score << endrow;
+    }
+    std::cout << "<<<<<<<<<<<" << std::endl;
+    nms_pred.clear();
   }
 
   checkCudaErrors(cudaEventDestroy(start));
